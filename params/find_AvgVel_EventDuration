@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+
+from openquake.hazardlib.geo.geodetic import distance
+import numpy as np
+from quakenet.data_io import load_catalog, load_stream
+import gflags
+import sys
+import os
+
+# TOFIX: load stream from month to look at
+catalog_path = os.path.join('data', 'catalogs', 'OK_catalog_2014.csv')
+stream_path_feb = os.path.join('data', 'streams', 'GSOK029_2-2014.mseed')
+stream_path_march = os.path.join('data', 'streams', 'GSOK029_3-2014.mseed')
+stream_path_april = os.path.join('data', 'streams', 'GSOK029_4-2014.mseed')
+output_path = os.path.join('output', 'check_speed')
+
+gflags.DEFINE_float('average_velocity',
+                    0.0, 'average velocity between events and station')
+gflags.DEFINE_float('event_durations',
+                    2.5, 'duration of each event -- no dependence on magnitude')
+gflags.DEFINE_float('max_mag',
+                    3.0, 'maximum magnitude of the events to inspect')
+
+FLAGS = gflags.FLAGS
+
+# only load february and march for now
+
+
+def filter_catalog(catalog_path, max_mag):
+    catalog = load_catalog(catalog_path)
+    # reduce the catalog to the time of interest (15 feb to 31 august 2014)
+    catalog = catalog[(catalog.origintime > "2014-02-15 00:00:00.000000") &
+                      (catalog.origintime <
+                       "2014-04-31 23:59:59.000000")]
+    # reduce the catalog to the latitude and longitude of interest
+    # (see Figure 1 of Benz et al., 2015)
+    catalog = catalog[(catalog.latitude > 35.7) & (catalog.latitude < 36) &
+                      (catalog.longitude > -97.6)
+                      & (catalog.longitude < -97.2)]
+    # catalog = catalog[catalog.prefmag > max_mag]
+    return catalog
+
+
+def distance_to_station(lat, long, depth):
+    # station GPS coordinates
+    lat0 = 35.796570
+    long0 = -97.454860
+    depth0 = -0.333
+    # return distance of the event to the station
+    return distance(long, lat, depth, long0, lat0, depth0)
+
+
+def main(argv):
+
+    try:
+        argv = FLAGS(argv)  # parse flags
+    except gflags.FlagsError, e:
+        print '%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS)
+        sys.exit(1)
+
+    # Load catalg, find distances to station
+    catalog = filter_catalog(catalog_path, FLAGS.max_mag)
+    coordinates = [(lat, lon, depth) for (lat, lon, depth) in zip(catalog.latitude,
+                                                                  catalog.longitude,
+                                                                  catalog.depth)]
+    distances_to_station = [distance_to_station(lat, long, depth)
+                            for (lat, long, depth) in coordinates]
+
+    # plot and save event trace
+    print ' + loading the streams'
+    stream = load_stream(stream_path_feb)
+    stream += load_stream(stream_path_march)
+    stream += load_stream(stream_path_april)
+    print ' - loading finished'
+    vel = FLAGS.average_velocity
+
+    for event in range(catalog.shape[0]):
+        raise ZeroDivisionError('utc_datetime broken with commit #f10b55f')
+        start_time = catalog.iloc[event].utc_datetime + \
+            distances_to_station[event] / vel
+        end_time = start_time + FLAGS.event_durations
+        stream.slice(start_time, end_time) \
+            .plot(outfile=os.path.join(output_path,
+                                       'event_' + str(event) + '.png'))
+if __name__ == "__main__":
+    main(sys.argv)

@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+
+"""Creates a .tfrecords dataset of stream of noise.
+e.g.,
+./create_dataset --stream_dir data/noise \
+--output_dir data/tfrecords/"""
+
+import os
+import numpy as np
+from quakenet.data_pipeline import DataWriter
+import tensorflow as tf
+from obspy.core import read
+from quakenet.data_io import load_catalog
+from obspy.core.utcdatetime import UTCDateTime
+from openquake.hazardlib.geo.geodetic import distance
+import fnmatch
+import tqdm
+
+flags = tf.flags
+flags.DEFINE_string('stream_dir', None,
+                    'path to the directory of streams to preprocess.')
+flags.DEFINE_string('output_dir', None,
+                    'path to the directory in which the tfrecords are saved')
+flags.DEFINE_bool("plot", True,
+                  "If we want the event traces to be plotted")
+flags.DEFINE_float('window_size', 10, 'size of the window samples (in seconds)')
+flags.DEFINE_integer("num_windows", 1854,"number of windows to generate")
+flags.DEFINE_bool("middle",False,"if True start at the middle of the day")
+args = flags.FLAGS
+
+def preprocess_stream(stream):
+    stream = stream.detrend('constant')
+    return stream.normalize()
+
+def main(_):
+
+    stream_files = [file for file in os.listdir(args.stream_dir) if
+                    fnmatch.fnmatch(file, '*.mseed')]
+    print "List of streams to anlayze", stream_files
+    stream_file = stream_files[0]
+
+    # Create dir to store tfrecords
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    # Load stream
+    stream_path = os.path.join(args.stream_dir, stream_file)
+    print "+ Loading Stream {}".format(stream_file)
+    stream = read(stream_path)
+    print '+ Preprocessing stream'
+    stream = preprocess_stream(stream)
+
+    # Write event waveforms and cluster_id in .tfrecords
+    if args.middle:
+        suffix = "_middle"
+    else:
+        suffix = "_start"
+    output_name = stream_file.split(".mseed")[0] + suffix+ ".tfrecords"
+    output_path = os.path.join(args.output_dir, output_name)
+    writer = DataWriter(output_path)
+
+    # Create sliding window generator
+    starttime = stream[0].stats.starttime.timestamp
+    endtime = stream[0].stats.endtime.timestamp
+    middle = (starttime + endtime) / 2
+
+    if args.middle:
+        stream = stream.slice(UTCDateTime(middle), UTCDateTime(endtime))
+
+    win_gen = stream.slide(window_length=args.window_size,
+                           step=args.window_size,
+                           include_partial_windows=False)
+    if args.num_windows is None:
+        num_windows = int((endtime - starttime) / args.window_size)
+    else:
+        num_windows = args.num_windows
+
+    for idx, win in enumerate(win_gen):
+
+        if idx >= num_windows:
+            break  
+        if idx % 10==0:
+            print idx
+        cluster_id = -1
+        n_traces = len(win)
+        # If there is not trace skip this waveform
+        if n_traces == 0:
+            continue
+        n_samples = len(win[0].data)
+        n_pts = win[0].stats.sampling_rate * args.window_size + 1
+        if (len(win) == 3) and (n_pts == n_samples):
+            # Write tfrecords
+            writer.write(win, cluster_id)
+            # Plot events
+            if args.plot:
+                trace = win[0]
+                viz_dir = os.path.join(
+                    args.output_dir, "viz", stream_file.split(".mseed")[0])
+                if not os.path.exists(viz_dir):
+                    os.makedirs(viz_dir)
+                trace.plot(outfile=os.path.join(viz_dir, 
+                                                "event_{}.png".format(idx)))
+        else:
+            print "Missing waveform for event:"  
+
+    # Cleanup writer
+    print("Number of events written={}".format(writer._written))
+    writer.close()
+
+
+if __name__ == "__main__":
+    tf.app.run()

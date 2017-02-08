@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+"""Creates a .tfrecords dataset of synth windows from a set of templates."""
+
+import sys
+import gflags
+import os
+from quakenet import synth_data
+
+gflags.DEFINE_string('templates_dir', None, 'path to template stream')
+gflags.DEFINE_string('output_path', None, 'output folder where the records are saved')
+gflags.DEFINE_float('max_amplitude', 100, 'maximum scaling value')
+gflags.DEFINE_integer('trace_duration', 60*60*24, 'length of signal to generate (in seconds)')
+gflags.DEFINE_integer('nb_streams', 1, 'number of streams to generate')
+gflags.DEFINE_integer('random_scalings',1, 'scaled copied of events are random')
+FLAGS = gflags.FLAGS
+
+
+def main(argv):
+    try:
+        argv = FLAGS(argv)  # parse flags
+    except gflags.FlagsError, e:
+        print '%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS)
+        sys.exit(1)
+
+    if not os.path.exists(FLAGS.output_path):
+        os.makedirs(FLAGS.output_path)
+
+    for stream_nb in range(FLAGS.nb_streams):
+        synth_data.make_synthetic_data(FLAGS.templates_dir,
+                                    FLAGS.trace_duration,
+                                    FLAGS.output_path,
+                                    max_amplitude=FLAGS.max_amplitude,
+                                    stream_nb = stream_nb,
+                                    random_scalings =FLAGS.random_scalings)
+
+if __name__ == "__main__":
+    gflags.MarkFlagAsRequired('templates_dir')
+    gflags.MarkFlagAsRequired('output_path')
+    main(sys.argv)

@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+"""Normalize an external catalog to our standardized format."""
+
+import gflags
+import sys
+
+import quakenet.data_conversion as dc
+
+gflags.DEFINE_string('src', None, '')
+gflags.DEFINE_string('dst', None, '')
+gflags.DEFINE_string('src_fmt', None, '')
+FLAGS = gflags.FLAGS
+
+
+def main(argv):
+    try:
+        argv = FLAGS(argv)  # parse flags
+    except gflags.FlagsError, e:
+        print '%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS)
+        sys.exit(1)
+
+    dg = dc.convert_catalog(FLAGS.src, FLAGS.dst, src_format=FLAGS.src_fmt)
+
+
+if __name__ == "__main__":
+    gflags.MarkFlagAsRequired('src')
+    gflags.MarkFlagAsRequired('dst')
+    gflags.MarkFlagAsRequired('src_fmt')
+    main(sys.argv)

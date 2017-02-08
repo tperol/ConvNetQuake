@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import gflags
+import numpy as np
+import sys
+import tensorflow as tf
+import os
+from tqdm import tqdm
+import time
+from template_matching.detection import DetectionTemplateMatching
+
+# gflags.DEFINE_string('train_data_path', None, 'path to the records to train on.')
+# gflags.DEFINE_string('train_template_path', None, 'path to the stream template')
+# gflags.DEFINE_string('train_catalog_path', None, 'path to the catalog of events')
+gflags.DEFINE_string('data_path', None, 'path to the records to test on.')
+gflags.DEFINE_string('template_path', None, 'path to the stream template')
+gflags.DEFINE_string('catalog_path', None, 'path to the catalog of events')
+gflags.DEFINE_float('beta',8.0,'threshold for template matching')
+FLAGS = gflags.FLAGS
+
+# gflags.MarkFlagAsRequired('train_data_path')
+# gflags.MarkFlagAsRequired('train_template_path')
+# gflags.MarkFlagAsRequired('train_catalog_path')
+
+
+def main(argv):
+    try:
+        argv = FLAGS(argv)  # parse flags
+    except gflags.FlagsError, e:
+        print '%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS)
+        sys.exit(1)
+
+    # if FLAGS.train_data_path is not None:
+    #     beta_grid = list(np.arange(7.5, 9.5, 0.5))
+    #     tm = DetectionTemplateMatching(beta_grid)
+    #     tm.fit(FLAGS.train_data_path,
+    #            FLAGS.train_template_path,
+    #            FLAGS.train_catalog_path)
+    # else:
+    #     tm = DetectionTemplateMatching()
+
+    tm = DetectionTemplateMatching()
+    tm.beta = FLAGS.beta
+    tm.predict(FLAGS.data_path,
+               FLAGS.template_path,
+               FLAGS.catalog_path)
+
+    false_pos, false_neg = tm.score(tm.detections, FLAGS.catalog_path)
+    print 'beta {}, FP {}, FN {}'.format(tm.beta, false_pos, false_neg)
+
+if __name__ == "__main__":
+    main(sys.argv)

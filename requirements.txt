@@ -1,0 +1,17 @@
+EQcorrscan==0.1.6
+librosa==0.4.3
+matplotlib==1.5.3
+numpy==1.11.2
+obspy==1.0.2
+pytest==2.8.7
+-e git+https://github.com/gem/oq-hazardlib.git@589fa31ddca3697e6b167082136dc0174a77bc16#egg=openquake.hazardlib
+pandas==0.19.0
+protobuf==3.0.0
+scikit-image==0.12.3
+scikit-learn==0.18
+scipy==0.18.1
+seaborn==0.7.1
+setproctitle==1.1.10
+tensorflow==0.11.0rc1
+terminado==0.6
+tqdm==4.9.0
