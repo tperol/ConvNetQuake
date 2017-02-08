@@ -14,12 +14,12 @@ Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake
 
 ## Data
 
-ConvNetQuake is trained on data from Oklahoman (USA). 
+ConvNetQuake is trained on data from Oklahoma (USA). 
 The continuous waveform data are publicly available at https://www.iris.edu/hq/
 The earthquake catalog from the [state survey](http://www.ou.edu/ogs.html) can be downloaded [here](http://people.seas.harvard.edu/~tperol/data/catalogs/OK_2014-2015-2016.csv).
 The earthquake catalog compiled by Benz et al. 2015 is available at [here](http://people.seas.harvard.edu/~tperol/data/catalogs/Benz_catalog.csv).
 
-All the data used in the paper is hosted [here](https://www.dropbox.com/sh/8kx6zo7z1tzze6h/AACIerv_QArpMaOir9Q8vpsBa?dl=0):
+The trained models and the data used in the paper are hosted [here](https://www.dropbox.com/sh/8kx6zo7z1tzze6h/AACIerv_QArpMaOir9Q8vpsBa?dl=0).
 
 
 We will provide the link to download the generated windows of events and windows of seismic noise soon.
