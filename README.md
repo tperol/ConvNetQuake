@@ -27,9 +27,9 @@ The `data` directory contains:
 * `catalogs`: earthquake catalogs the OGS (years 2014 to 2016) and from Benz et al. 2015 (Feb. to Sept. 2014)
 * `6_clusters`: windows used for training and testing of ConvNetQuake with 6 geographic areas
 * `50_clusters`: windows used for training and testing of ConvNetQuake with 50 geographic areas
-> * `known_template`: template T_1 used to generate synthetic data 
-> * `unknown_template`: template T_2 used to generate synthetic data 
-> * `synth`: directory of synthetic data for testing 
+* `known_template`: template T_1 used to generate synthetic data 
+* `unknown_template`: template T_2 used to generate synthetic data 
+* `synth`: directory of synthetic data for testing 
 
 ## Trained models
 
