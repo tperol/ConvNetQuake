@@ -8,60 +8,74 @@ Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake
 
 ## Installation
 
+* Download repository
 * Install dependencies: `pip install -r requirements.txt`
 * Add directory to python path: `./setpath.sh`
 * Run tests: `./runtests.sh` (THIS NEED TO BE EXTENDED)
+* Download the [data](https://www.dropbox.com/sh/3p9rmi1bcpvnk5k/AAAV8n9VG_e0QXOpoofsSH0Ma?dl=0) (roughly 70 Gb) and create a symlink to the `data` directory
+`ln -s data Downloads/data`
+* Download the [pre-trained models](https://www.dropbox.com/sh/t9dj8mmfx1fmxfa/AABSJQke8Ao6wfRnKMvQXipta?dl=0) and create a symlink to the `models` directory
+`ln -s models Downloads/models`
 
 ## Data
 
 ConvNetQuake is trained on data from Oklahoma (USA). 
-The continuous waveform data are publicly available at https://www.iris.edu/hq/
-The earthquake catalog from the [state survey](http://www.ou.edu/ogs.html) can be downloaded [here](http://people.seas.harvard.edu/~tperol/data/catalogs/OK_2014-2015-2016.csv).
-The earthquake catalog compiled by Benz et al. 2015 is available at [here](http://people.seas.harvard.edu/~tperol/data/catalogs/Benz_catalog.csv).
+The continuous waveform data and earthquake catalog are publicly available at https://www.iris.edu/hq/ and http://www.ou.edu/ogs.html
 
-The trained models and the data used in the paper are hosted [here](https://www.dropbox.com/sh/8kx6zo7z1tzze6h/AACIerv_QArpMaOir9Q8vpsBa?dl=0).
+The data directory contains:
+* `streams`: 2.5 years of monthly streams from GSOK029 and GSOK027 in .mseed format
+* `catalogs`: earthquake catalogs from the Oklahoma Geological Survey (OGS, years 2014 to 2016) and from Benz et al. 2015 (Feb. to Sept. 2014)
+* `6_clusters`: contains the windows used for training and testing of ConvNetQuake with 6 geographic areas
+* `50_clusters`: contains the windows used for training and testing of ConvNetQuake with 50 geographic areas
+    ----- Optional ----- 
+* `known_template`: template T_1 used to generate synthetic data (see paper)
+* `unknown_template`: template T_2 used to generate synthetic data (see paper)
+* `synth`: directory of synthetic data for testing (see paper)
 
 
-We will provide the link to download the generated windows of events and windows of seismic noise soon.
-* Download the windows used for training and testing at **insert url** 
-* Download the trained models at **insert url**
+## Pre-trained models
 
+The models directory contains:
+* `convnetquake`: convnetquake pre-trained model for 6 geographic areas 
+* `50_clusters`: convnetquake pre-trained model for 50 geographic areas 
+* `synth`: convnetquake pre-trained model on synthetic data
 
 ## 1 - What will you find in this repository ?
 
 ConvNetQuake is a Convolutional Neural Network that detect and locate events from a single waveform.
-The dataset consists of continuous waveform data from two stations in Oklahoma: GS.OK029 and GS.OK027. 
-The catalogs are from the OGS and Benz et al., 2015.
-
 This repository contains all the codes used to write our paper. For each step, we provide the commands to run.
 
 ## 2 - Train ConvNetQuake on a dataset
 
 There are multiple steps in training ConvNetQuake on a dataset of waveforms. 
 
-- Use a catalog of localized events and partition them into clusters. This create a new catalog of events with their labels (cluster index). The script is in `bin/preprocess`.
-- Load month long continuous waveform data. Preprocess them (mean removal, normalization). Use the catalog of labeled events to create windows of events from the continuous waveform data. Use an extended catalog to create windows of noise from continuous waveform data. In Perol et al., 2017 we use a catalog of events found using a subspace detection method (Benz et al., 2015). This step is essential to train ConvNetQuake to recognize noise. The codes are in `bin/preprocess`.
+- Use a catalog of located events and partition them into clusters. This create a new catalog of events with their labels (cluster index). The script is in `bin/preprocess`.
+- Load month long continuous waveform data. Preprocess them (mean removal, normalization). Use the catalog of labeled events to create windows of events from the continuous waveform data. Use an extended catalog to create windows of noise from continuous waveform data. The codes are in `bin/preprocess`.
 - Train ConvNetQuake on the windows created, visualize of the training and evaluate on a test set. The codes are in `bin/`.
 
-### 2.1 - Partition events into clusters
+section 2.1, 2.2 and 2.3 are only required to reproduced the windows. Skip to 2.4 for training and testing of the network.
 
-Load the catalog from the state survey of localized events for the year 2014, 2015 and 2016. Filter to keep the events in the region of interest and keep events after 15 February 2014 (the activation date of the two stations used in this study). The script partition the events into clusters using the latitude and longitude. In Perol et al., 2017 we use K-means for clustering. Other methods are also implemented. To do the clustering run:
+### 2.1 - Partition earthquakes into clusters
+
+Load the OGS catalog. Filter to keep the events in the region of interest and after 15 February 2014. 
+The script partition the events into clusters using the latitude and longitude. To partition the events into 6 clusters using K-Means run:
 
 ```shell
 ./bin/preprocess/cluster_events --src data/catalogs/OK_2014-2015-2016.csv\
 --dst data/6_clusters --n_components 6 --model KMeans
 ```
 
-This clusters the events into 6 clusters using the K-means algorithm. 
-We output the catalog of labeled events `catalog_with_cluster_ids.csv` in `data/6_clusters`/ . 
-We also create  `clusters_metadata.json` that provide information about the number of events per clusters. 
-The code also plot the events in a map. The colored events are the training events, the black events are the events in the test set (July 2014).
+This outputs a catalog of labeled events `catalog_with_cluster_ids.csv` in `data/6_clusters/`. 
+We also create  `clusters_metadata.json` that provides information about the number of events per clusters. 
+The code also plots the events on a map. The colored events are the training events, the black events are the events in the test set (July 2014).
 
-The cluster labels range from 0 to N-1 with N the number of clusters. 
+The cluster labels range from 0 to M-1 with M the number of clusters. 
 
 ### 2.2 Create labeled windows of events
 
-Load a directory of month long stream in .mseed and the catalog of labeled events. The script preprocess the month long streams (remove the mean, normalization). Using the origin time of the event from the catalog and a mean velocity of 5 km/s between the station and the event location, we create a 10 seconds long window of the events.
+Load a directory of month long streams and the catalog of labeled events. 
+The script preprocess the month long streams (remove the mean, normalization). 
+Using the origin time of the event from the catalog and a mean velocity of 5 km/s between the station and the event location, we create 10 second long event windows.
 
 ```shell
 ./bin/preprocess/create_dataset_events.py --stream_dir data/streams\
@@ -70,9 +84,9 @@ Load a directory of month long stream in .mseed and the catalog of labeled event
 --save_mseed True --plot True
 ```
 
-In this case the tfrecords of the name of the .mseed processed are created in the output directory. Pass `—save_mseed` to create a directory with the windows events created saved in .mseed format. Pass `—plot` to plot the events in .png.
+This create tfrecords containing all the event windows. Pass `—-save_mseed` to save the windows in .mseed. Pass `—-plot` to save the events in .png.
 
-One can do **data augmentation** of the windows of events created. Once tfrecords of labeled event are created, load them with the `data_augmentation.py` script and add Gaussian noise or stretch or shift the signal and generate a new tfrecords from it. To do this, run:
+`data_augmentation.py` adds Gaussian noise and stretch or shift the signal to generate new tfrecords. 
 
 ```shell
 ./bin/preprocess/data_augmentation.py --tfrecords data/agu/detection/train/positive \
@@ -80,11 +94,13 @@ One can do **data augmentation** of the windows of events created. Once tfrecord
 --std_factor 1.2
 ```
 
-This add Gaussian Noise in the data of a standard deviation 1.2 times the one in the window. You can pass various flags. `-plot` plot the created windows. `—compress_data` compress the signal. `—stretch_data` stretch the signal. `—shift_data` shifts the signal (not useful for ConvNetQuake because of the translation invariance of convolutional neural networks). In Perol et al., 2017 we only add Gaussian noise. The other data augmentation techniques do not improve the accuracy of the trained network.
+You can pass various flags. `--plot` plot the generated windows. `-—compress_data` compress the signal. `-—stretch_data` stretch the signal. `-—shift_data` shifts the signal (not useful for ConvNetQuake because of the translation equivariance of convolutional neural networks). 
+
+In Perol et al., 2017 we only add Gaussian noise. The other data augmentation techniques do not improve the accuracy of the network.
 
 ### 2.3 Create windows of noise
 
-Load one month long stream, preprocess them and load an extended catalog to create windows of noise labeled as -1. Note that we will add 1 to all labels when training ConvNetQuake because of the error function choice. 
+Load one month long stream, preprocess the stream and load an extended catalog to create windows of noise labeled as -1. 
 
 ```shell
 ./bin/preprocess/create_dataset_noise.py \
@@ -93,23 +109,27 @@ Load one month long stream, preprocess them and load an extended catalog to crea
 --output_dir data/noise_OK029/noise_august
 ```
 
-This generates windows of 10 seconds long with a lag of 10 seconds. Check the flags in the code if you want to change this. `-—max_windows` for the maximum number  of windows to generate. For each window, we look at the extended catalog to check if there is an event in it. Note that this extended catalog correspond to the time on the continuous waveform data. No need to account for propagation time. The `—plot` and `—save_mseed` are available.
+This generates 10 second long windows with with a 10 second offset between consecutive windows. 
+Check the flags in the code if you want to change this. 
+`-—max_windows` controls the maximum number of windows to generate. 
+The `-—plot` and `—-save_mseed` are available.
 
 ### 2.4 Train ConvNetQuake and monitor the accuracy on train and test sets
 
-Place the windows of noise in a folder named `negative` and the windows of events in a folder named `positive`. These two folders are placed into the training folder. To train ConvNetQuake run:
+To train ConvNetQuake on GPU (see details in the Methods section of the paper):
 
 ```shell
 ./bin/train --dataset data/6_clusters/train --checkpoint_dir output/convnetquake --n_clusters 6
 ```
 
-This train the network by feeding an equal amount of positive and negative examples per batch.
+In the checkpoints directory, there are checkpoints with saved weights and tensorboard events. 
+The checkpoints are named after the number of steps done during training. For example `model-500` correspond to the weights after 500 steps of training. The configuration parameters (batch size, display step etc) can be found and changed in `quakenet/config.py`. 
 
-In this case the checkpoints will be saved in the checkpoint_dir. In the checkpoints folder, there are checkpoints with saved weights and events for tensorboard. The checkpoints are named after the number of steps done during training. For example `model-500` correspond to the weights after 500 steps of training. The configuration parameters (batch size, display step etc) can be found and changed in `quakenet/config.py`. This script run the model detailed in `quakenet/models.py`. Training is usually done on a GPU.
+The network architecture is stored in `quakenet/models.py`. 
 
-Note that we provide the trained model hosted at  **insert url**.
+Note that we also provide the trained model in `models/convnetquake/`.
 
-During training, there are two things to monitor: the accuracy on the windows of noise and accuracy on windows of events. These can be ran on CPUS since there are not computationally expensive. The scripts to run are:
+During training, there are two things to monitor: the accuracy on the windows of noise and accuracy on windows of events. This is not computationally intensive and can be ran on CPUs.
 
 ```shell
 ./bin/evaluate --checkpoint_dir output/convnetquake/ConvNetQuake \
@@ -128,9 +148,7 @@ This evaluate the accuracy on the events of the test set. The program sleeps for
 
 This evaluate the accuracy on the windows of noise.
 
-For the evaluation procedure, there is no need to create a postive and negative folder.
-
-You can visualize the accuracy on the train and test set while the network is training. The accuracy for detection and for localization is implemented. Run
+You can visualize the accuracy on the train and test set while the network is training. The accuracy for detection and for location is implemented. Run
 
 ```shell
 tensorboard --logdir output/convnetquake/ConvNetQuake
@@ -140,14 +158,16 @@ tensorboard --logdir output/convnetquake/ConvNetQuake
 
 ![Monitoring detection accuracy on train and test sets during training of ConvNetQuake](./figures/training.png)
 
-You can also visualize the network architecture
+You can also visualize the network architecture with tensorboard
 
 ![ConvNetQuake architecture](./figures/architecture.png)
 
-## 3 - Detecting and localizing events in continuous waveform data
+## 3 - Detecting and locating events in continuous waveform data
 
 There are two methods for detecting events from continuous waveform data. 
-The first one is relatively slow, it loads a .mseed and generate windows. While the windows are generated they are fed to ConvNetQuake that makes the classification. A faster method does the classification from tfrecords. First windows, a generated and saved into tfrecords. Then the tfrecords are analyzed and classified by ConvNetQuake to create a catalog of events.
+The first one is relatively slow, it loads a .mseed and generate windows. While the windows are generated they are fed to ConvNetQuake that makes the classification. 
+A faster method does the classification from tfrecords. First windows, a generated and saved into tfrecords. Then the tfrecords are analyzed and classified by ConvNetQuake to create a catalog of events.
+
 This second methods analyze one month of data in 4 min on a MacbookPro.
 
 ### 3.1 From .mseed
@@ -167,14 +187,21 @@ First, the windows are generated from a .mseed and stored into a tfrecords.
 --window_size 10 --window_step 11 \
 --max_windows 5000
 ```
+
 See the code for a documentation on the flags to pass.
 This code can be parallelized easily to speed up the process.
 
 Then, the detection from the windows stored in tfrecords are made with
 
 ```shell
-TODO
+./bin/predict_from_tfrecords.py \
+--dataset data/tfrecords_continuous_detection/july.tfrecords \
+--checkpoint_dir models/convnetquake \
+--n_clusters 6
+--max_windows 2678400
+--output output/july_detections
 ```
+Check the flags for more options.
 
 ## 4 - Visualization of data
 
