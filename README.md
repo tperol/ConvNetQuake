@@ -53,7 +53,7 @@ There are multiple steps in training ConvNetQuake on a dataset of waveforms.
 - Load month long continuous waveform data. Preprocess them (mean removal, normalization). Use the catalog of labeled events to create windows of events from the continuous waveform data. Use an extended catalog to create windows of noise from continuous waveform data. The codes are in `bin/preprocess`.
 - Train ConvNetQuake on the windows created, visualize of the training and evaluate on a test set. The codes are in `bin/`.
 
-section 2.1, 2.2 and 2.3 are only required to reproduced the windows. Skip to 2.4 for training and testing of the network.
+sections 2.1, 2.2 and 2.3 are only required to reproduced the windows. Skip to 2.4 for training and testing of the network.
 
 ### 2.1 - Partition earthquakes into clusters
 
