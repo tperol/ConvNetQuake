@@ -2,8 +2,6 @@
 ConvNetQuake
 =============
 
-Details about ConvNetQuake can be found in:
-
 Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake detection and location. [preprint arXiv:1702.02073](https://arxiv.org/abs/1702.02073), 2017.
 
 ## Installation
