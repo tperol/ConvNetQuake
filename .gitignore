@@ -5,7 +5,7 @@ data
 *.eggs/
 testdata
 tmpdata
-model
+models
 output
 *.json
 output

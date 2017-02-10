@@ -5,7 +5,6 @@ ConvNetQuake
 Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake detection and location. [preprint arXiv:1702.02073](https://arxiv.org/abs/1702.02073), 2017.
 
 ## Installation
-
 * Download repository
 * Install dependencies: `pip install -r requirements.txt`
 * Add directory to python path: `./setpath.sh`
@@ -97,7 +96,7 @@ Pass `—-save_mseed` to save the windows in .mseed. Pass `—-plot` to save the
 --std_factor 1.2
 ```
 
-You can pass various flags: `--plot` plot the generated windows, `-—compress_data` compress the signal, `-—stretch_data` stretch the signal, `-—shift_data` shifts the signal . 
+You can pass various flags: `--plot` plot the generated windows, `-—compress_data` compress the signal, `-—stretch_data` stretch the signal, `-—shift_data` shifts the signal. 
 
 In Perol et al., 2017 we only add Gaussian noise. 
 The other data augmentation techniques do not improve the accuracy of the network.
@@ -122,13 +121,16 @@ Note that in the case we do not account for the travel time because the detectio
 
 ### 2.4 Train ConvNetQuake and monitor the accuracy on train and test sets
 
+We split the tfrecords of windows for training and testing. The training set has two directories: 
+`positive` containing the event windows and `negative` containing the noise windows.
+
 To train ConvNetQuake (GPU recommended):
 
 ```shell
 ./bin/train --dataset data/6_clusters/train --checkpoint_dir output/convnetquake --n_clusters 6
 ```
 
-This outputs checkpoints with saved weights and tensorboard events in `checkpoint_dir`.
+This outputs checkpoints with saved weights and tensorboard events in the directory given by the `checkpoint_dir` flag.
 The checkpoints are named after the number of steps done during training. 
 For example `model-500` correspond to the weights after 500 steps of training. 
 The configuration parameters (batch size, display step etc) are in `quakenet/config.py`. 
@@ -176,12 +178,17 @@ This second methods analyze one month of data in 4 min on a MacbookPro.
 
 ### 3.1 From .mseed
 
-Run:
+To create 10 second long windows with a 1 second offset and classify them, run:
+
 ```shell
-TODO
+./bin/predict_from_stream.py --stream_path data/streams/GSOK029_7-2014.mseed \
+--checkpoint_dir models/convnetquake --n_clusters 6 \
+--window_step 11 --output output/july_detections/from_stream \
+--max_windows 8640
 ```
 
-### 3.2 From tfrecords (faster)
+### 3.2 From tfrecords (faster, 4  min for 1 month of continuous data)
+
 First, the windows are generated from a .mseed and stored into a tfrecords.
 
 ```shell
@@ -219,9 +226,6 @@ The codes for vizualization can be found in `bin/viz`.
 --windows 40000
 ```
 
-If the number of events in the tfrecords in the `data_path` directory is lower than 40000, the number of events is printed. The cluster ids are also printed
-
-
 ### 4.2 - Visualize windows from tfrecords
 
 ```shell
@@ -246,7 +250,8 @@ Load a .mseed with a catalog and plot the windows of events.
 
 ### 4.4 - Visualize mislabeled windows
 
-To visualized the mislabeled windows from a net on a probabilistic map (see Figure ? of Perol et al., 2017)
+To visualized the mislabeled windows from a net on a probabilistic map:
+
 ```shell
 ./bin/viz/misclassified_loc.py \
 --dataset data/mseed_events \
@@ -289,7 +294,7 @@ test set ang get the score:
 --test_catalog_path data/synth/catalog.csv
 ```
 It is possible to avoid training and only test on a stream. In this case beta
-= 8.5. The command is:
+= 8.5. Run
 
 ```shell
 ./bin/template_matching --test_data_path data/synth/stream.mseed \

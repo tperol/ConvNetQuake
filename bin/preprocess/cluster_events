@@ -152,8 +152,10 @@ def main(argv):
                                         [-97.4,35.95],
                                         [-97.6,35.75]])
         elif FLAGS.n_components == 50:
-            initialization = np.load('centroids_50.npy')
+            init_50 = os.path.join(FLAGS.dst,'centroids_50.npy')
+            initialization = np.load(init_50)
         else:
+            # random initialization
             initialization = 'k-means++'
 
         clust = KMeans(FLAGS.n_components, 
@@ -225,6 +227,7 @@ def main(argv):
     # plt.show()
     plt.savefig(fig_name)
 
+    # Couple of files useful to keep
     np_name = "cluster_ids_{}_comp.npy".format(FLAGS.n_components)
     np.save(np_name,Z)
 
