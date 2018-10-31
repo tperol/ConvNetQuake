@@ -2,7 +2,7 @@
 ConvNetQuake
 =============
 
-Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake detection and location. [preprint arXiv:1702.02073](https://arxiv.org/abs/1702.02073), 2017.
+Perol., T, M. Gharbi and M. Denolle. Convolutional Neural Network for Earthquake detection and location. *Science Advances*, Vol. 4, no. 2, e1700578, DOI: 10.1126/sciadv.1700578, 2018 [Link](http://advances.sciencemag.org/content/4/2/e1700578).
 
 ## Installation
 * Download repository
